@@ -4,6 +4,7 @@ using Azure;
 using EJMEmailProvider.Models;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EJMEmailProvider.Services
 {
@@ -38,6 +39,25 @@ namespace EJMEmailProvider.Services
             return null!;
         }
 
+        public async Task<string> UnpackUnsubscriberAsync(ServiceBusReceivedMessage message)
+        {
+            try
+            {
+                var request = message.Body.ToString();
+
+                if (request != null)
+                {
+                    return request;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("UnpackUnsubscriberAsync : Run ::" + ex.Message);
+
+            }
+            return null!;
+        }
+
         public bool SendEmailAsync(EmailRequest emailRequest)
         {
             try
@@ -58,6 +78,39 @@ namespace EJMEmailProvider.Services
             {
                 _logger.LogError("SendEmailAsync ::" + ex.Message);
 
+            }
+
+            return false;
+        }
+
+        public async Task<bool> SendUnsubscribeEmailAsync(string email)
+        {
+            try
+            {
+                var emailToSend = new EmailRequest
+                {
+                    To = email,
+                    Subject = "You have been unsubscribed",
+                    Body = $"<html><body><strong>Hello,</strong><br><br>You have been unsubscribed from our mailing list.</body></html>",
+                    PlainText = "Hello, you have been unsubscribed from our mailing list."
+
+                };
+
+                var response = await _emailClient.SendAsync(WaitUntil.Completed,
+                    senderAddress: Environment.GetEnvironmentVariable("SenderAddress"),
+                    recipientAddress: emailToSend.To,
+                    subject: emailToSend.Subject,
+                    htmlContent: emailToSend.Body,
+                    plainTextContent: emailToSend.PlainText);
+
+                if (response.HasCompleted)
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to send email to {email}. StatusCode: {ex.Message}");
             }
 
             return false;
