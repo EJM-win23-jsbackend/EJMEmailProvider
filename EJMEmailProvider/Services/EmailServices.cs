@@ -39,24 +39,24 @@ namespace EJMEmailProvider.Services
             return null!;
         }
 
-        public async Task<string> UnpackUnsubscriberAsync(ServiceBusReceivedMessage message)
-        {
-            try
-            {
-                var request = message.Body.ToString();
+        //public EmailRequest UnpackUnsubscriberAsync(ServiceBusReceivedMessage message)
+        //{
+        //    try
+        //    {
+        //        var request = message.Body.ToString();
 
-                if (request != null)
-                {
-                    return request;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("UnpackUnsubscriberAsync : Run ::" + ex.Message);
+        //        if (request != null)
+        //        {
+        //            return request;
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError("UnpackUnsubscriberAsync : Run ::" + ex.Message);
 
-            }
-            return null!;
-        }
+        //    }
+        //    return null!;
+        //}
 
         public bool SendEmailAsync(EmailRequest emailRequest)
         {
@@ -83,34 +83,34 @@ namespace EJMEmailProvider.Services
             return false;
         }
 
-        public async Task<bool> SendUnsubscribeEmailAsync(string email)
+        public bool SendUnsubscribeEmailAsync(EmailRequest emailRequest)
         {
             try
             {
                 var emailToSend = new EmailRequest
                 {
-                    To = email,
+                    To = emailRequest.To,
                     Subject = "You have been unsubscribed",
                     Body = $"<html><body><strong>Hello,</strong><br><br>You have been unsubscribed from our mailing list.</body></html>",
                     PlainText = "Hello, you have been unsubscribed from our mailing list."
 
                 };
 
-                var response = await _emailClient.SendAsync(WaitUntil.Completed,
+                var response = _emailClient.Send(WaitUntil.Completed,
                     senderAddress: Environment.GetEnvironmentVariable("SenderAddress"),
                     recipientAddress: emailToSend.To,
                     subject: emailToSend.Subject,
                     htmlContent: emailToSend.Body,
                     plainTextContent: emailToSend.PlainText);
 
-                if (response.HasCompleted)
+                if (response.HasCompleted == true)
                 {
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to send email to {email}. StatusCode: {ex.Message}");
+                _logger.LogError($"Failed to send email to {emailRequest.To}. StatusCode: {ex.Message}");
             }
 
             return false;

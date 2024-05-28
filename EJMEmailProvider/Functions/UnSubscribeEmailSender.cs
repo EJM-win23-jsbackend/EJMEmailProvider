@@ -26,16 +26,16 @@ namespace EJMEmailProvider.Functions
 
         [Function(nameof(UnSubscribeEmailSender))]
         public async Task Run(
-            [ServiceBusTrigger("email_unsubscribe", Connection = "ServiceBus")]
+            [ServiceBusTrigger("email_unsubscribe", Connection = "ServiceBusConnection")]
             ServiceBusReceivedMessage message,
             ServiceBusMessageActions messageActions)
         {
             try
             {
-                var emailRequest = await _emailServices.UnpackUnsubscriberAsync(message);
-                if (emailRequest != null && !string.IsNullOrEmpty(emailRequest))
+                var emailRequest = _emailServices.UnpackEmailRequest(message);
+                if (emailRequest != null && !string.IsNullOrEmpty(emailRequest.To))
                 {
-                    await _emailServices.SendUnsubscribeEmailAsync(emailRequest);
+                    _emailServices.SendUnsubscribeEmailAsync(emailRequest);
                     await messageActions.CompleteMessageAsync(message);
                 }
             }
